@@ -1,15 +1,24 @@
 import { S3 } from "aws-sdk";
 import fs from "fs";
-import dotenv from "dotenv";
-
-dotenv.config();
+import "dotenv/config";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const { AccessKeyId, SecretAccessKey, S3ClientLink } = process.env;
 
-const s3Client = new S3({
-	accessKeyId: AccessKeyId ,
-	secretAccessKey: SecretAccessKey,
+
+
+if (!AccessKeyId || !SecretAccessKey || !S3ClientLink) {
+	throw new Error("Missing AWS credentials");
+}
+
+const Client = new S3Client({
+	region: "auto",
+	// errors here
 	endpoint: S3ClientLink,
+	credentials: {
+		accessKeyId: AccessKeyId,
+		secretAccessKey: SecretAccessKey,
+	},
 });
 
 /**
@@ -21,21 +30,18 @@ const s3Client = new S3({
  *  @example uploadToS3("test.txt", "C:\\Users\\aryan\\Desktop\\deployer\\src\\test.txt")
  */
 export const uploadToS3 = async (filename: string, localfilepath: string) => {
-	console.log("uploading to s3 - " + filename);
+	console.log(" uploading to s3 - " + filename);
 	const fileContents = fs.readFileSync(localfilepath);
-	try { 
-			const response = await s3Client
-		.upload({
+	try {
+		const command = new PutObjectCommand({
 			Bucket: "sellerhub-bucket",
-			Body: fileContents,
 			Key: filename,
-		})
-			.promise();
-		
+			Body: fileContents,
+		});
+		const lol = await Client.send(command);
 
+		console.log(" ✅ uploaded to s3 - " + filename, lol);
 	} catch (error) {
-		
+		console.log(error);
 	}
-
-	
 };
